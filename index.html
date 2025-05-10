@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Calendar</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カレンダーウィジェット</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', 'Noto Sans JP', sans-serif;
+            background: transparent;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 15px;
+        }
+        
+        .calendar-container {
+            max-width: 380px;
+            width: 100%;
+            perspective: 1000px;
+        }
+        
+        .calendar-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+        }
+        
+        .calendar-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.09);
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .month-year {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #374151;
+            letter-spacing: 0.5px;
+        }
+        
+        .nav-button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-button:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        
+        .day-name {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6B7280;
+            padding-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .day {
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .day:hover:not(.empty):not(.today):not(.selected) {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .today {
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .selected:not(.today) {
+            background: rgba(99, 102, 241, 0.2);
+            font-weight: 600;
+        }
+        
+        .other-month {
+            color: #9CA3AF;
+        }
+        
+        .empty {
+            cursor: default;
+        }
+        
+        .gradient-line {
+            height: 3px;
+            width: 60px;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            margin: 0 auto 12px auto;
+            border-radius: 3px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+        }
+        
+        .calendar-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .today-button {
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .today-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
+        
+        .today-button:active {
+            transform: translateY(0);
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(10);
+                opacity: 0;
+            }
+        }
+        
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            animation: ripple 0.8s ease-out;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar-card">
+            <div class="text-center">
+                <div class="gradient-line"></div>
+            </div>
+            
+            <div class="calendar-content fade-in">
+                <div class="calendar-header">
+                    <button class="nav-button" id="prev-month">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                    </button>
+                    <div class="month-year" id="month-year"></div>
+                    <button class="nav-button" id="next-month">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18l6-6-6-6"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="calendar-grid" id="day-names">
+                    <div class="day-name">日</div>
+                    <div class="day-name">月</div>
+                    <div class="day-name">火</div>
+                    <div class="day-name">水</div>
+                    <div class="day-name">木</div>
+                    <div class="day-name">金</div>
+                    <div class="day-name">土</div>
+                </div>
+                
+                <div class="calendar-grid" id="calendar-days"></div>
+            </div>
+            
+            <div class="mt-4 flex justify-center">
+                <button id="today-button" class="today-button bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white px-4 py-1.5 rounded-full transition-all duration-300 text-xs flex items-center font-medium">
+                    <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    今日
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+            let currentDate = new Date();
+            let currentMonth = currentDate.getMonth();
+            let currentYear = currentDate.getFullYear();
+            
+            const calendarDays = document.getElementById('calendar-days');
+            const monthYear = document.getElementById('month-year');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+            const todayBtn = document.getElementById('today-button');
+            
+            // カレンダーを生成
+            function generateCalendar(month, year) {
+                // 月と年の表示を更新
+                monthYear.textContent = `${year}年 ${monthNames[month]}`;
+                
+                // カレンダーをクリア
+                calendarDays.innerHTML = '';
+                
+                // 月の最初の日と最後の日を取得
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                
+                // 前月の日数を取得
+                const prevMonthLastDay = new Date(year, month, 0).getDate();
+                
+                // 月の最初の日の曜日（0: 日曜日, 1: 月曜日, ..., 6: 土曜日）
+                const firstDayOfWeek = firstDay.getDay();
+                
+                // 前月の日付を表示
+                for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+                    const dayElement = document.createElement('div');
+                    dayElement.classList.add('day', 'other-month');
+                    dayElement.textContent = prevMonthLastDay - i;
+                    calendarDays.appendChild(dayElement);
+                }
+                
+                // 現在の月の日付を表示
+                const today = new Date();
+                for (let i = 1; i <= lastDay.getDate(); i++) {
+                    const dayElement = document.createElement('div');
+                    dayElement.classList.add('day');
+                    dayElement.textContent = i;
+                    
+                    // 今日の日付をハイライト
+                    if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        dayElement.classList.add('today');
+                    }
+                    
+                    // 日付をクリックしたときの処理
+                    dayElement.addEventListener('click', function() {
+                        // 今日の日付はハイライトを維持
+                        const isToday = this.classList.contains('today');
+                        
+                        // 選択された日付のスタイルをリセット
+                        document.querySelectorAll('.day').forEach(day => {
+                            if (!day.classList.contains('today')) {
+                                day.classList.remove('selected');
+                            }
+                        });
+                        
+                        // 今日でない場合のみ選択状態にする
+                        if (!isToday) {
+                            this.classList.add('selected');
+                        }
+                    });
+                    
+                    calendarDays.appendChild(dayElement);
+                }
+                
+                // 次月の日付を表示（5週間分になるように調整）
+                const totalDaysShown = firstDayOfWeek + lastDay.getDate();
+                const rowsNeeded = Math.ceil(totalDaysShown / 7);
+                const cellsToFill = (rowsNeeded * 7) - totalDaysShown;
+                
+                for (let i = 1; i <= cellsToFill; i++) {
+                    const dayElement = document.createElement('div');
+                    dayElement.classList.add('day', 'other-month');
+                    dayElement.textContent = i;
+                    calendarDays.appendChild(dayElement);
+                }
+            }
+            
+            // 前月へ
+            prevMonthBtn.addEventListener('click', function() {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                generateCalendar(currentMonth, currentYear);
+            });
+            
+            // 次月へ
+            nextMonthBtn.addEventListener('click', function() {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                generateCalendar(currentMonth, currentYear);
+            });
+            
+            // 今日ボタンのリップルエフェクト
+            todayBtn.addEventListener('click', function(e) {
+                // リップルエフェクトの作成
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                
+                // クリックした位置を取得
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // リップルの位置を設定
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                
+                // リップルを追加
+                this.appendChild(ripple);
+                
+                // アニメーション終了後にリップルを削除
+                setTimeout(() => {
+                    ripple.remove();
+                }, 800);
+                
+                // 今日の日付に移動
+                const now = new Date();
+                currentMonth = now.getMonth();
+                currentYear = now.getFullYear();
+                generateCalendar(currentMonth, currentYear);
+            });
+            
+            // 初期表示
+            generateCalendar(currentMonth, currentYear);
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93da8b7e13678a63',t:'MTc0Njg5MTczMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
